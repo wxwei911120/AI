@@ -1,0 +1,126 @@
+services:
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15
+    container_name: ai_marketing_postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ai_marketing}
+      - POSTGRES_USER=${POSTGRES_USER:-ai_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-your_secure_password_2024}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ai_user} -d ${POSTGRES_DB:-ai_marketing}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: ai_marketing_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # AI生成服务 (CPU版本)
+  ai-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: ai_marketing_generator
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-ai_marketing}
+      - POSTGRES_USER=${POSTGRES_USER:-ai_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-your_secure_password_2024}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_SECRET_KEY=${API_SECRET_KEY:-your_jwt_secret_key_here}
+      - USE_CUDA=false
+      - MODEL_CACHE_DIR=/app/checkpoints
+    volumes:
+      - ./checkpoints:/app/checkpoints
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Gradio Web界面
+  gradio-interface:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: ai_marketing_gradio
+    environment:
+      - API_BASE_URL=http://ai-generator:8000
+      - GRADIO_SERVER_NAME=0.0.0.0
+      - GRADIO_SERVER_PORT=7860
+    volumes:
+      - ./outputs:/app/outputs
+    ports:
+      - "7860:7860"
+    depends_on:
+      - ai-generator
+    restart: unless-stopped
+    command: ["python", "marketing_content_generator/gradio_interface_full.py"]
+
+  # Celery 任务队列工作进程
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: ai_marketing_celery_worker
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-ai_marketing}
+      - POSTGRES_USER=${POSTGRES_USER:-ai_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-your_secure_password_2024}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - USE_CUDA=false
+      - MODEL_CACHE_DIR=/app/checkpoints
+    volumes:
+      - ./checkpoints:/app/checkpoints
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["celery", "-A", "marketing_content_generator.api_server_full:celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: ai_marketing_network

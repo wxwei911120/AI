@@ -1,0 +1,87 @@
+# AI行銷內容生成系統 - 完整版依賴
+# ============================================
+
+# 核心AI框架
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+transformers>=4.30.0
+diffusers>=0.21.0
+accelerate>=0.20.0
+safetensors>=0.3.0
+
+# Stability AI模型支援
+omegaconf>=2.3.0
+opencv-python>=4.7.0
+einops>=0.6.1
+open-clip-torch>=2.20.0
+timm>=0.9.0
+
+# 數據處理
+numpy>=1.24.0
+pandas>=2.0.0
+pillow>=10.0.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+av>=10.0.0
+
+# Web服務
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+gradio>=3.50.0
+python-multipart>=0.0.6
+aiofiles>=23.1.0
+python-socketio>=5.8.0
+
+# 文件處理
+openpyxl>=3.1.0
+python-docx>=0.8.11
+reportlab>=4.0.0
+markdown>=3.4.0
+
+# 資料庫
+sqlalchemy>=2.0.0
+alembic>=1.11.0
+
+# 監控與日誌
+loguru>=0.7.0
+prometheus-client>=0.17.0
+psutil>=5.9.0
+
+# 開發工具
+pytest>=7.4.0
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+
+# 其他工具
+requests>=2.31.0
+pyyaml>=6.0
+tqdm>=4.65.0
+rich>=13.4.0
+click>=8.1.0
+typer>=0.9.0
+python-dotenv>=1.0.0
+
+# HuggingFace集成
+huggingface-hub>=0.16.0
+datasets>=2.14.0
+tokenizers>=0.13.0
+
+# 圖像與視頻處理
+scikit-image>=0.21.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# 多媒體處理
+moviepy>=1.0.3
+ffmpeg-python>=0.2.0
+
+# 並行處理
+joblib>=1.3.0
+multiprocess>=0.70.0
+
+# 雲端部署
+docker>=6.1.0
+kubernetes>=27.2.0

@@ -1,0 +1,76 @@
+# AI營銷內容生成系統 - CPU版本 (適合快速測試)
+
+FROM python:3.10-slim
+
+# 設置環境變數
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONPATH=/app
+ENV TORCH_HOME=/app/torch_cache
+ENV HF_HOME=/app/hf_cache
+
+# 設置工作目錄
+WORKDIR /app
+
+# 安裝系統依賴
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    wget \
+    curl \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libfontconfig1 \
+    libxrender1 \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
+# 升級pip
+RUN pip install --upgrade pip
+
+# 安裝PyTorch CPU版本 (更穩定)
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# 複製requirements並安裝依賴
+COPY requirements/pt2.txt /app/requirements/pt2.txt
+RUN pip install -r requirements/pt2.txt
+
+# 安裝額外的依賴
+RUN pip install \
+    fastapi==0.104.1 \
+    uvicorn==0.24.0 \
+    sqlalchemy==2.0.23 \
+    psycopg2-binary==2.9.9 \
+    redis==5.0.1 \
+    celery==5.3.4 \
+    gradio==4.7.1 \
+    transformers==4.36.0 \
+    diffusers==0.24.0 \
+    accelerate==0.25.0 \
+    matplotlib==3.7.2 \
+    plotly==5.17.0 \
+    pandas==2.1.3 \
+    pillow==10.1.0 \
+    requests==2.31.0 \
+    python-multipart==0.0.6 \
+    python-jose[cryptography]==3.3.0 \
+    passlib[bcrypt]==1.7.4
+
+# 複製應用程序代碼
+COPY . /app/
+
+# 創建必要的目錄
+RUN mkdir -p /app/checkpoints /app/uploads /app/outputs /app/logs
+
+# 設置權限
+RUN chmod +x /app/marketing_content_generator/*.py
+
+# 暴露端口
+EXPOSE 8000 7860
+
+# 健康檢查
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 啟動腳本
+CMD ["python", "marketing_content_generator/api_server_full.py"]
